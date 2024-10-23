@@ -25,7 +25,7 @@ namespace ComplexModelBinding.Controllers
             List<CourseIndexViewModel> courseData = 
                     await (from c in _context.Courses
                              join i in _context.Instructors 
-                                on c.Instructor.Id equals i.Id
+                                on c.Teacher.Id equals i.Id
                              orderby c.Title
                              select new CourseIndexViewModel
                              {
@@ -77,13 +77,13 @@ namespace ComplexModelBinding.Controllers
                 {
                     Title = course.Title,
                     Description = course.Description,
-                    Instructor = new Instructor()
+                    Teacher = new Instructor()
                     {
                         Id = course.ChosenInstructor
                     }
                 };
                 //Set the state of the instructor to unchanged. Tell EF we have not modified the instructor object
-                _context.Entry(newCourse.Instructor).State = EntityState.Unchanged;
+                _context.Entry(newCourse.Teacher).State = EntityState.Unchanged;
 
                 _context.Add(newCourse);
                 await _context.SaveChangesAsync();

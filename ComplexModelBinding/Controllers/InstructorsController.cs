@@ -7,22 +7,24 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using ComplexModelBinding.Data;
 using ComplexModelBinding.Models;
+using Microsoft.Data.SqlClient;
+using System.Data.Common;
 
 namespace ComplexModelBinding.Controllers
 {
     public class InstructorsController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IInstructorRepository _instructorRepo;
 
-        public InstructorsController(ApplicationDbContext context)
+        public InstructorsController(IInstructorRepository instructorRepo)
         {
-            _context = context;
+            _instructorRepo = instructorRepo;
         }
 
         // GET: Instructors
         public async Task<IActionResult> Index()
         {
-            return View(await _context.Instructors.ToListAsync());
+            return View(await _instructorRepo.GetAllInstructors());
         }
 
         // GET: Instructors/Details/5
@@ -33,8 +35,8 @@ namespace ComplexModelBinding.Controllers
                 return NotFound();
             }
 
-            var instructor = await _context.Instructors
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var instructor = await _instructorRepo.GetInstructorById(id.Value);
+
             if (instructor == null)
             {
                 return NotFound();
@@ -58,8 +60,7 @@ namespace ComplexModelBinding.Controllers
         {
             if (ModelState.IsValid)
             {
-                _context.Add(instructor);
-                await _context.SaveChangesAsync();
+                await _instructorRepo.SaveInstructor(instructor);
                 return RedirectToAction(nameof(Index));
             }
             return View(instructor);
@@ -73,7 +74,7 @@ namespace ComplexModelBinding.Controllers
                 return NotFound();
             }
 
-            var instructor = await _context.Instructors.FindAsync(id);
+            var instructor = await _instructorRepo.GetInstructorById(id.Value);
             if (instructor == null)
             {
                 return NotFound();
@@ -97,12 +98,11 @@ namespace ComplexModelBinding.Controllers
             {
                 try
                 {
-                    _context.Update(instructor);
-                    await _context.SaveChangesAsync();
+                    await _instructorRepo.UpdateInstructor(instructor);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    if (!InstructorExists(instructor.Id))
+                    if (!await InstructorExists(instructor.Id))
                     {
                         return NotFound();
                     }
@@ -124,8 +124,7 @@ namespace ComplexModelBinding.Controllers
                 return NotFound();
             }
 
-            var instructor = await _context.Instructors
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var instructor = await _instructorRepo.GetInstructorById(id.Value);
             if (instructor == null)
             {
                 return NotFound();
@@ -139,19 +138,18 @@ namespace ComplexModelBinding.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var instructor = await _context.Instructors.FindAsync(id);
-            if (instructor != null)
-            {
-                _context.Instructors.Remove(instructor);
-            }
+            var instructor = await _instructorRepo.GetInstructorById(id);
 
-            await _context.SaveChangesAsync();
+            TempData["Message"] = $"{instructor.FullName} has been removed from any related courses.";
+
+            // Remove the instructor
+            await _instructorRepo.DeleteInstructor(instructor.Id);
             return RedirectToAction(nameof(Index));
         }
 
-        private bool InstructorExists(int id)
+        private async Task<bool> InstructorExists(int id)
         {
-            return _context.Instructors.Any(e => e.Id == id);
+            return await _instructorRepo.GetInstructorById(id) != null;
         }
     }
 }

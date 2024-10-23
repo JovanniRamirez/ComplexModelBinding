@@ -12,7 +12,7 @@ namespace ComplexModelBinding.Models
 
         public string Description { get; set; }
 
-        public Instructor Instructor { get; set; }
+        public Instructor? Teacher { get; set; }
     }
 
     public class CourseCreateViewModel
